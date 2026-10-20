@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fixin Hixon Vault</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header><h1>🔒 Fixin Hixon <span>Vault</span></h1><div id="who"></div></header>
+<main>
+  <!-- LOGIN -->
+  <section id="view-login" class="card hidden">
+    <h2 style="margin-top:0">Log in</h2>
+    <div id="step-user">
+      <label>Username</label>
+      <input id="login-username" autocomplete="username" placeholder="your username">
+      <button id="btn-request">Email me my login code</button>
+      <p class="msg" id="login-msg"></p>
+    </div>
+    <div id="step-code" class="hidden">
+      <label>6-digit code from your email (or click the link in it)</label>
+      <input id="login-code" inputmode="numeric" placeholder="123456">
+      <button id="btn-verify">Log in</button>
+      <button class="ghost" id="btn-back">Back</button>
+      <p class="msg" id="code-msg"></p>
+    </div>
+  </section>
+
+  <!-- VAULT -->
+  <section id="view-vault" class="hidden">
+    <div class="tabs">
+      <button id="tab-vault">Files</button>
+      <button id="tab-admin" class="ghost hidden">Admin</button>
+      <button id="btn-logout" class="ghost" style="margin-left:auto">Log out</button>
+    </div>
+    <div class="row">
+      <input id="new-folder-name" placeholder="New folder name" style="max-width:260px">
+      <button class="small" id="btn-folder">Create folder</button>
+    </div>
+    <div class="drop" id="drop">Drag &amp; drop files here, or <label style="color:var(--acc);cursor:pointer">browse<input type="file" id="file-input" multiple hidden></label>
+      <div class="row" style="justify-content:center;margin-top:8px"><label>Upload into folder:</label><select id="upload-folder" style="max-width:240px;width:auto"></select></div>
+      <progress id="up-progress" class="hidden" max="100" value="0"></progress>
+      <p class="msg" id="up-msg"></p>
+    </div>
+    <div class="security">
+      <h3>🛡️ How your files are kept secure</h3>
+      <ul>
+        <li><b>Encrypted at rest:</b> every file is encrypted with AES-256-GCM before it reaches the disk. Files are stored under random names, and the encryption key is kept separate from the stored files — a copy of the file folder alone is unreadable ciphertext.</li>
+        <li><b>No passwords, ever:</b> nobody has a password that could leak or be guessed. Login uses a one-time code / link sent to your email — it expires in 15 minutes, works exactly once, and requests are rate-limited.</li>
+        <li><b>Private by default:</b> a file is visible only to its owner and the specific people it has been shared with. Every view and download is checked on the server — guessing a file's address returns nothing.</li>
+        <li><b>Scanned for viruses:</b> every upload is scanned with ClamAV antivirus before it is stored; a file that fails the scan is rejected and never reaches the vault.</li>
+        <li><b>Integrity checked:</b> a SHA-256 fingerprint is calculated when your file arrives and verified against the stored copy, so any corruption or tampering is detectable.</li>
+        <li><b>Encrypted in transit:</b> access to this vault is over HTTPS only, so files and login codes are encrypted between your device and the server.</li>
+        <li><b>Fully audited:</b> logins, uploads, downloads, shares, and deletions are recorded in an audit log reviewed by the vault administrator.</li>
+        <li><b>Access can be revoked instantly:</b> if an account is disabled or a session is revoked, that access stops immediately — including for files already shared.</li>
+      </ul>
+      <p class="msg">Hosted on a private server controlled by the vault owner — your files are not sold, scanned for advertising, or shared with third parties.</p>
+    </div>
+    <h2>Folders</h2><div id="folders"></div>
+    <h2>Files</h2><div id="files"></div>
+    <h2>My share links</h2>
+    <label style="display:block;margin-bottom:6px"><input type="checkbox" id="links-active-only" checked style="width:auto"> Show only active links (not expired, exhausted, or revoked)</label>
+    <div id="links"></div>
+    <h2>Sharing</h2><div id="sharing"></div>
+    <h2>Trash</h2><div id="trash"></div>
+    <h2>My sessions</h2>
+    <div class="row"><button class="small ghost" id="btn-revoke-others">Revoke my other sessions</button></div>
+    <div id="sessions"></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="view-admin" class="hidden">
+    <div class="tabs">
+      <button id="tab-vault2" class="ghost">Files</button>
+      <button>Admin</button>
+      <button id="btn-logout2" class="ghost" style="margin-left:auto">Log out</button>
+    </div>
+    <div id="stats" class="msg"></div>
+    <h2>Users</h2>
+    <div class="row">
+      <input id="u-username" placeholder="username" style="max-width:170px">
+      <input id="u-email" placeholder="email" style="max-width:240px">
+      <input id="u-name" placeholder="display name" style="max-width:190px">
+      <select id="u-role" style="max-width:120px;width:auto"><option value="user">user</option><option value="admin">admin</option></select>
+      <label style="display:inline"><input type="checkbox" id="u-linkperm" style="width:auto"> Can create share links</label>
+      <button class="small" id="btn-adduser">Add user</button>
+    </div>
+    <p class="msg" id="admin-msg"></p>
+    <div id="users"></div>
+    <div id="edit-user" class="hidden" style="border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px">
+      <h3 style="margin-top:0">Edit user: <span id="e-username"></span></h3>
+      <label>Email address</label><input id="e-email" type="email">
+      <label>Display name</label><input id="e-name">
+      <label>Role</label><select id="e-role"><option value="user">user</option><option value="admin">admin</option></select>
+      <label>Storage quota in GB (blank = unlimited)</label><input id="e-quota" type="number" min="0" step="1" placeholder="unlimited">
+      <label style="display:block;margin:8px 0"><input type="checkbox" id="e-active" style="width:auto"> Active (can log in)</label>
+      <label style="display:block;margin:8px 0"><input type="checkbox" id="e-linkperm" style="width:auto"> Can create share links (create, regenerate, and manage their own links)</label>
+      <div class="row"><button class="small" id="btn-saveuser">Save changes</button><button class="small ghost" id="btn-canceledit">Cancel</button></div>
+      <p class="msg" id="edit-msg"></p>
+    </div>
+    <h2>Groups</h2>
+    <div class="row">
+      <input id="g-name" placeholder="group name (e.g. vendors)" style="max-width:240px">
+      <button class="small" id="btn-addgroup">Create group</button>
+    </div>
+    <div id="groups"></div>
+    <h2>All files</h2>
+    <div class="row">
+      <select id="af-owner" style="max-width:190px;width:auto"><option value="">All owners</option></select>
+      <input id="af-q" placeholder="search by file name" style="max-width:240px">
+      <button class="small ghost" id="btn-affilter">Filter</button>
+    </div>
+    <div id="admin-files"></div>
+    <div id="admin-folders"></div>
+    <h2>Shares</h2>
+    <p class="msg">Every user and group share in the vault. Revoking here removes that access immediately.</p>
+    <div id="admin-shares"></div>
+    <h2>Settings</h2><div id="settings"></div><button class="small" id="btn-settings">Save settings</button>
+    <h2>Audit log</h2><div id="audit"></div>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body></html>

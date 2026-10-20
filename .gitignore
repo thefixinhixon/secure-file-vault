@@ -1,0 +1,17 @@
+# Secrets — never commit
+.env
+tunnel.env
+
+# Runtime data (default local data directory)
+data/
+
+# Backups produced by scripts/backup.sh
+backups/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor / OS
+.DS_Store
+*.swp

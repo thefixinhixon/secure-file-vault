@@ -1,0 +1,49 @@
+services:
+  vault:
+    build: .
+    container_name: secure-vault
+    restart: unless-stopped
+    # The container runs as your own uid/gid so the data directory stays
+    # readable by you on the host. setup.sh fills these in from `id`.
+    user: "${VAULT_UID:-1000}:${VAULT_GID:-1000}"
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+    ports:
+      # Bound to localhost by default. Put a reverse proxy or the Cloudflare
+      # Tunnel (below) in front for public access — do not expose this port
+      # directly to the internet.
+      - "${VAULT_BIND:-127.0.0.1}:${VAULT_PORT:-8080}:8080"
+    volumes:
+      - ${VAULT_DATA_DIR:-./data}:/data
+    depends_on:
+      - clamav
+
+  # Virus scanning sidecar. Every upload is scanned before it is encrypted
+  # and stored; infected files are rejected. First start downloads the
+  # signature database and can take several minutes.
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: vault-clamav
+    restart: unless-stopped
+    volumes:
+      - clamav-db:/var/lib/clamav
+
+  # Optional public access via Cloudflare Tunnel (no open ports, no public
+  # IP needed). Inactive until the "public" profile is used AND tunnel.env
+  # contains a TUNNEL_TOKEN (see README "Going public").
+  # Start with: docker compose --profile public up -d
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: vault-tunnel
+    restart: unless-stopped
+    profiles: ["public"]
+    env_file: tunnel.env
+    command: tunnel --no-autoupdate run
+    depends_on:
+      - vault
+
+volumes:
+  clamav-db:
